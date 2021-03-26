@@ -1,0 +1,12 @@
+{
+    "body": {
+        "folderItems": ["Somestring"], 
+        "result": {
+            "system": "Darwin", 
+            "machine": "x86_64", 
+            "nist_test_vectors_runtime_optmised": "2.0854809284210205", 
+            "additional_information": "", 
+            "algorithm_name": "elephant"
+        }
+    }
+}

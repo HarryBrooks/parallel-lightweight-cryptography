@@ -1,0 +1,19 @@
+{
+  "name": "benchmarking-app",
+  "version": "1.1.0",
+  "description": "An application to handle the benchmarking and authentication of LWC algorithms.",
+  "author": "Harry Brooks",
+  "license": "MIT",
+  "repository": {
+    "type": "git"
+  },
+  "devDependencies": {
+    "serverless-bundle": "^1.2.5",
+    "serverless-dotenv-plugin": "^2.1.1",
+    "serverless-offline": "^5.3.3"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.610.0",
+    "js-sha256": "^0.9.0"
+  }
+}

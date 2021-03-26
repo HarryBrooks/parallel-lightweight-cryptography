@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            Lightweight Cryptography Benchmark Results
+        </title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+        <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    </head>
+    <body>
+        <div class="row" style="margin: 2%;">
+            <div class="col-md-12" id="main">
+                <h1>Lightweight Cryptography Results</h1>
+                <p>A webpage showing the results of the lightweight cryptography benchmark produced by Harry Brooks for his final year project</p>
+                <h5>Filters</h5>
+                <div class="row">
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="algorithmSelect">Algorithm:</label>
+                            <select class="form-control" id="algorithmSelect">
+                                <option>All</option>
+                                <option>Elephant</option>
+                                <option>Photon-Beetle</option>
+                                <option>SpoC</option>
+                                <option>Pyjamask</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="machineSelect">Machine:</label>
+                            <select class="form-control" id="machineSelect">
+                                <option>All</option>
+                                <option>Raspberry Pi Zero</option>
+                                <option>Raspberry Pi 2</option>
+                                <option>Lenovo ThinkStation i7</option>
+                                <option>Lenovo ThinkStation Xeon</option>
+                                <option>Hamilton x2 Xeon</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-dark" onclick="generateTable()">Update Table</button>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-dark" onclick="compareAlgorithms(false)">Compare Algorithms</button>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-dark" onclick="compareAlgorithms(true)">Compare Original Algorithms</button>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-dark" onclick="compareWithOriginal()">Original Vs. Improved</button>
+                    </div>
+                </div>
+                <table class="table table-hover table-responsive" id="resultsTable" style="display: block;">
+                    <thead>
+                        <tr>
+                            <th>Algorithm</th>
+                            <th>System</th>
+                            <th>Machine</th>
+                            <th>Additional Information</th>
+                            <th>NIST Vectors Optimised</th>
+                            <th>NIST Vectors Not Optimised</th>
+                            <th>NIST Vectors with OpenMP</th>
+                            <th>ROM usage</th>
+                            <th>RAM usage</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+                <div id="moreInfo" style="display: none;">
+                    <div class="row" style="border-top: solid; border-color: gray; padding-top: 10px;">
+                        <div class="col-md-11">
+                            <h3>In depth results</h3>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-outline-dark" onclick="returnTable()">Back</button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div id="my_dataviz1"></div>
+                            <p>Graph showing the average execution times (s) for various optimisations along the y-axis and message and associated data sizes (2^(kilobytes)) along the x-axis.</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div id="my_dataviz6"></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div id="my_dataviz7"></div>
+                        </div>
+                    </div>
+                    <div class="row" style="height: 450px;">
+                        <div class="col-md-6">
+                            <div id="my_dataviz2"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="my_dataviz3"></div>
+                        </div>
+                    </div>
+                    <div class="row" style="height: 450px;">
+                        <div class="col-md-6">
+                            <div id="my_dataviz4"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="my_dataviz5"></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-11">
+                            <p>
+                                The throughput was collected by running the algorthm on inputs ranging from 1KB to 2MB for both the message and associated data. Throughput requires a large 
+                                amount of data to encrypt such that the overhead from the algorithm starting and ending effects the results less.
+                            </p>
+                            <p>
+                                The latency was collected by running the algorithm on inputs equal to 0. This is in order to highlight the overhead associated with each algorithm giving
+                                an insight into the algorithms time to respond that is not affected by the length of the message.
+                            </p>
+                        </div>
+                        <div class="col-md-1">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-11">
+                            <p>The data will be available to download shortly</p>
+                        </div>
+                        <div class="col-md-1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            
+            function createResult(value) {
+                var td = document.createElement("td");
+                td.appendChild(document.createTextNode(value));
+                return(td);
+            }
+
+            const algorithms = {
+                "Elephant": "elephant",
+                "Photon-Beetle": "photon-beetle",
+                "SpoC": "spoc",
+                "Pyjamask": "pyjamask"
+            };
+
+            const machines = {
+                "Raspberry Pi Zero": "raspberry pi zero 1 core",
+                "Raspberry Pi 2": "raspberry pi 2 model b 4 cores",
+                "Lenovo ThinkStation i7": "intel i7-7700 4 cores 8 threads desktop",
+                "Lenovo ThinkStation Xeon": "intel xeon 4 cores 8 threads",
+                "Hamilton x2 Xeon": "hamilton"
+            };
+
+            function getAlgorithms(dataRow){
+                let algorithm = document.getElementById("algorithmSelect").value;
+                return (algorithms[algorithm] == dataRow["algorithm_name"] || "original_"+algorithms[algorithm] == dataRow["algorithm_name"] );
+            }
+
+            function getMachines(dataRow){
+                let machine = document.getElementById("machineSelect").value;
+                return (machines[machine] == dataRow["additional_information"] || "original_"+machines[machine] == dataRow["additional_information"]);
+            }
+
+            function removeNonOriginalImplementations(dataRow) {
+                return (dataRow["algorithm_name"].includes("original"));
+            }
+
+            function removeOriginalImplementations(dataRow) {
+                return (!dataRow["algorithm_name"].includes("original"));
+            }
+
+            function compareWithOriginal(){
+                let machine = document.getElementById("machineSelect").value;
+                if (machine == "All") {
+                    alert("Select a machine");
+                    return;
+                }
+
+                const url = "https://2zipnoysp5.execute-api.eu-west-1.amazonaws.com/prod/benchmarks";
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "GET", url, false ); // false for synchronous request
+                xmlHttp.send( null );
+                let tableData;
+                tableData = JSON.parse(xmlHttp.responseText).Items.filter(getMachines);
+
+                var table = document.getElementById("resultsTable");
+                table.style = "display:none";
+
+                var moreInfo = document.getElementById("moreInfo");
+                moreInfo.style = "display:block";
+                
+                createOriginalImprovedBarChart(tableData, "my_dataviz2", "elephant")
+                createOriginalImprovedBarChart(tableData, "my_dataviz3", "spoc")
+                createOriginalImprovedBarChart(tableData, "my_dataviz4", "photon-beetle")
+                createOriginalImprovedBarChart(tableData, "my_dataviz5", "pyjamask")
+            }
+
+            function createOriginalImprovedBarChart(data, divname, algorithm) {
+
+                indexImproved = -1
+                indexOriginal = -1
+
+                for(let i in data){
+                    if(data[i]["algorithm_name"] == algorithm)
+                        indexImproved = i;
+                    if(data[i]["algorithm_name"] == "original_" + algorithm)
+                        indexOriginal = i;
+                }
+
+                var chart = new CanvasJS.Chart(divname, {
+                    animationEnabled: true,
+                    title:{
+                        text: "Throughput (" + algorithm + ")"
+                    },	
+                    axisY: {
+                        title: "Throughput (Bytes/s)",
+                        titleFontColor: "#4F81BC",
+                        lineColor: "#4F81BC",
+                        labelFontColor: "#4F81BC",
+                        tickColor: "#4F81BC"
+                    },
+                    toolTip: {
+                        shared: true
+                    },
+                    legend: {
+                        cursor:"pointer",
+                        itemclick: toggleDataSeries
+                    },
+                    data: [{
+                        type: "column",
+                        name: "No Optimisation (Bytes/s)",
+                        legendText: "No Optimisation",
+                        showInLegend: true, 
+                        dataPoints: [
+                            { label: algorithm, y: data[indexImproved]["small_O0"]["average_throughput_encrypting"] },
+                            { label: "Original " + algorithm, y: data[indexOriginal]["small_O0"]["average_throughput_encrypting"]},
+                        ]
+                    },
+                    {
+                        type: "column",	
+                        name: "SIMD Optimisation (Bytes/s)",
+                        legendText: "SIMD Optimisation",
+                        showInLegend: true,
+                        dataPoints: [
+                            { label: algorithm, y: data[indexImproved]["small_O2"]["average_throughput_encrypting"] },
+                            { label: "Original " + algorithm, y: data[indexOriginal]["small_O2"]["average_throughput_encrypting"]},
+                        ]
+                    },
+                    {
+                        type: "column",	
+                        name: "MIMD Optimisation (Bytes/s)",
+                        legendText: "MIMD Optimisation",
+                        showInLegend: true,
+                        dataPoints: [
+                            { label: algorithm, y: data[indexImproved]["small_MP"]["average_throughput_encrypting"] },
+                            { label: "Original " + algorithm, y: data[indexOriginal]["small_O2"]["average_throughput_encrypting"]},
+                        ]
+                    }
+                    ]
+                });
+                chart.render();
+                }
+
+            function compareAlgorithms(original){
+                let machine = document.getElementById("machineSelect").value;
+                if (machine == "All") {
+                    alert("Select a machine");
+                    return;
+                }
+
+                const url = "https://2zipnoysp5.execute-api.eu-west-1.amazonaws.com/prod/benchmarks";
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "GET", url, false ); // false for synchronous request
+                xmlHttp.send( null );
+                let tableData;
+                if (original) {
+                    tableData = JSON.parse(xmlHttp.responseText).Items.filter(getMachines).filter(removeNonOriginalImplementations);
+                } else {
+                    tableData = JSON.parse(xmlHttp.responseText).Items.filter(getMachines).filter(removeOriginalImplementations);
+                }
+                console.log(tableData)
+
+                var table = document.getElementById("resultsTable");
+                table.style = "display:none";
+
+                var moreInfo = document.getElementById("moreInfo");
+                moreInfo.style = "display:block";
+                
+                if (!original) {
+                    createCompareGraph(tableData, "#my_dataviz7", "small_MP", original);
+                }
+                createCompareGraph(tableData, "#my_dataviz6", "small_O2", original);
+                createCompareGraph(tableData, "#my_dataviz1", "small_O0", original);
+
+
+            }
+
+            function createCompareGraph(data, divname, type, original) {
+
+                maxy = Math.max(Math.max.apply(Math,data[0][type]["encrypting_times"]),
+                                Math.max.apply(Math,data[1][type]["encrypting_times"]),
+                                Math.max.apply(Math,data[2][type]["encrypting_times"]),
+                                Math.max.apply(Math,data[3][type]["encrypting_times"]));
+                let groups;
+                if (original){
+                    groups = ["original_pyjamask", "original_elephant", "original_spoc", "original_photon-beetle"];
+                } else{
+                    groups = ["pyjamask", "elephant", "spoc", "photon-beetle"];
+                }
+                var dataReady = groups.map( function(grpName) {
+                    let index = -1;
+                    for(let i in data) {
+                        if(data[i]["algorithm_name"] === grpName) {
+                            index = i;
+                            break;
+                        }
+                    }
+                    return {
+                        name: grpName,
+                        id: grpName,
+                        values: data[index][type]["encrypting_times"].map( function(v) {
+                            return {x: Math.log2(Math.pow(2,data[index][type]["encrypting_times"].indexOf(v)+10) / Math.pow(2,10)), y:v}
+                        })
+                    };
+                });
+
+                // set the dimensions and margins of the graph
+                var margin = {top: 30, right: 100, bottom: 30, left: 30},
+                    width = (screen.width * 0.75) - margin.left - margin.right,
+                    height = 600 - margin.top - margin.bottom;
+                // append the svg object to the body of the page
+                var svg = d3.select(divname)
+                .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .attr("style", "display:block;margin:auto;")
+                .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+                
+                var myColor = d3.scaleOrdinal()
+                    .domain(groups)
+                    .range(d3.schemeSet2);
+                
+                var x = d3.scaleLinear()
+                    .domain([Math.log2(Math.pow(2,10)/ Math.pow(2,10)),Math.log2(Math.pow(2,21) / Math.pow(2,10))])
+                    .range([ 0, width ]);
+                svg.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
+                var y = d3.scaleLinear()
+                    .domain( [0,maxy])
+                    .range([ height, 0 ]);
+                svg.append("g")
+                    .call(d3.axisLeft(y));
+
+                var line = d3.line()
+                    .x(function(d) { return x(d.x) })
+                    .y(function(d) { return y(d.y) })
+                svg.selectAll("myLines")
+                    .data(dataReady)
+                    .enter()
+                    .append("path")
+                        .attr("class", function(d){ return d.id })
+                        .attr("d", function(d){ return line(d.values) } )
+                        .attr("stroke", function(d){ return myColor(d.name) })
+                        .style("stroke-width", 2)
+                        .style("fill", "none")
+
+                svg
+                    .selectAll("myDots")
+                    .data(dataReady)
+                    .enter()
+                        .append('g')
+                        .style("fill", function(d){ return myColor(d.name) })
+                        .attr("class", function(d){ return d.id })
+                    .selectAll("myPoints")
+                    .data(function(d){ return d.values })
+                    .enter()
+                    .append("circle")
+                        .attr("cx", function(d) { return x(d.x) } )
+                        .attr("cy", function(d) { return y(d.y) } )
+                        .attr("r", 5)
+                        .attr("stroke", "white")
+
+                    // Add a legend at the end of each line
+                svg
+                    .selectAll("myLabels")
+                    .data(dataReady)
+                    .enter()
+                        .append('g')
+                        .append("text")
+                            .attr("class", function(d){ return d.id })
+                            .datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; }) // keep only the last value of each time series
+                            .attr("transform", function(d) { return "translate(" + x(d.value.x) + "," + y(d.value.y) + ")"; }) // Put the text at the position of the last point
+                            .attr("x", 12) // shift the text a bit more right
+                            .text(function(d) { return d.name; })
+                            .style("fill", function(d){ return myColor(d.name) })
+                            .style("font-size", 15)
+                
+                    // Add a legend (interactive)
+                svg
+                    .selectAll("myLegend")
+                    .data(dataReady)
+                    .enter()
+                        .append('g')
+                        .append("text")
+                            .attr('x', function(d,i){ return 30 + i*60})
+                            .attr('y', 30)
+                            .text(function(d) { return d.name; })
+                            .attr('id',function(d) { return d.id;})
+                            .style("fill", function(d){ return myColor(d.name) })
+                            .style("font-size", 15)
+                        .on("click", function(d){
+                            // is the element currently visible ?
+                            currentOpacity = d3.selectAll("." + d.id).style("opacity")
+                            // Change the opacity: from 0 to 1 or from 1 to 0
+                            d3.selectAll("." + d.id).transition().style("opacity", currentOpacity == 1 ? 0:1)
+
+                        })
+            }
+
+            function generateTable() {
+                const url = "https://2zipnoysp5.execute-api.eu-west-1.amazonaws.com/prod/benchmarks";
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "GET", url, false ); // false for synchronous request
+                xmlHttp.send( null );
+                let tableData = JSON.parse(xmlHttp.responseText).Items;
+
+                let algorithm = document.getElementById("algorithmSelect").value;
+                let machine = document.getElementById("machineSelect").value;
+
+                if (algorithm != "All"){
+                    tableData = tableData.filter(getAlgorithms);
+                }
+                if (machine != "All"){
+                    tableData = tableData.filter(getMachines)
+                }
+
+
+                var table = document.getElementById("resultsTable");
+
+                var tableBody = document.getElementById("tableBody");
+                tableBody.innerHTML = "";
+                
+                for(let result of tableData) {
+                    console.log(result);
+                    var tr = document.createElement("tr");
+
+                    tr.appendChild(createResult(result["algorithm_name"]));
+                    tr.appendChild(createResult(result["system"]));
+                    tr.appendChild(createResult(result["machine"]));
+                    tr.appendChild(createResult(result["additional_information"]));
+                    tr.appendChild(createResult(result["nist_O2"]["encryption"]));
+                    tr.appendChild(createResult(result["nist_O0"]["encryption"]));
+                    try{
+                        tr.appendChild(createResult(result["nist_MP"]["encryption"]));
+                    } catch( e ) {
+                        tr.appendChild(createResult("None"));
+                    }
+                    tr.appendChild(createResult(result["average rom usage"]))
+                    try {
+                        tr.appendChild(createResult(result["memory"]["end_vmrss"][result["memory"]["end_vmrss"].length - 2] - result["memory"]["start_vmrss"][result["memory"]["start_vmrss"].length - 2]))
+                    } catch( e ) {
+                        tr.appendChild(createResult("None"));
+                    } 
+                    tr.id = result["benchmarkId"];
+
+                    tr.onclick = function() {
+                        moreInfo(this.id);
+                    }
+                    tableBody.appendChild(tr);
+                }
+
+                table.appendChild(tableBody);
+            }
+
+            function moreInfo(benchmarkId) {
+                const url = "https://2zipnoysp5.execute-api.eu-west-1.amazonaws.com/prod/benchmarks/" + benchmarkId;
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.open( "GET", url, false ); // false for synchronous request
+                xmlHttp.send( null );
+                const data = JSON.parse(xmlHttp.responseText)["Item"];
+
+                var table = document.getElementById("resultsTable");
+                table.style = "display:none";
+
+                var body = document.getElementById("main");
+
+                var moreInfo = document.getElementById("moreInfo");
+                moreInfo.style = "display:block";
+
+                let hasMP = "small_MP" in data
+                
+                if (hasMP){
+                    maxy = Math.max(Math.max.apply(Math,data["small_O2"]["encrypting_times"]),
+                            Math.max.apply(Math,data["small_O0"]["encrypting_times"]),
+                            Math.max.apply(Math,data["small_MP"]["encrypting_times"]));
+                } else {
+                    maxy = Math.max(Math.max.apply(Math,data["small_O2"]["encrypting_times"]),
+                            Math.max.apply(Math,data["small_O0"]["encrypting_times"]));
+                }
+
+                createGraph(data, "#my_dataviz1", maxy, hasMP);
+                createBarChart(data,"my_dataviz2", true, hasMP);
+                createBarChart(data,"my_dataviz3", false, hasMP);
+
+                createLatencyBarChart(data, "my_dataviz4", true, hasMP);
+                createLatencyBarChart(data, "my_dataviz5", false, hasMP);
+
+            }
+
+            function toggleDataSeries(e) {
+                if (typeof(e.dataSeries.visible) === "undefined" || e.dataSeries.visible) {
+                    e.dataSeries.visible = false;
+                }
+                else {
+                    e.dataSeries.visible = true;
+                }
+                chart.render();
+            }
+
+            function createGraph(data, divname, maxy, hasMP) {
+                let groups;
+                if (hasMP) {
+                    groups = ["small_O2", "small_O0", "small_MP"];
+                } else{
+                    groups = ["small_O2", "small_O0"];
+                }
+
+                var dataReady = groups.map( function(grpName) {
+                    var finalName;
+                    if(grpName.includes("O2"))
+                        finalName = " SIMD ";
+                    else if(grpName.includes("O0"))
+                        finalName = " Non ";
+                    else
+                        finalName = " MIMD ";
+                    return {
+                        name: finalName,
+                        id: grpName,
+                        values: data[grpName]["encrypting_times"].map( function(v) {
+                            return {x: Math.log2(Math.pow(2,data[grpName]["encrypting_times"].indexOf(v)+10) / Math.pow(2,10)), y:v}
+                        })
+                    };
+                });
+
+                // set the dimensions and margins of the graph
+                var margin = {top: 30, right: 100, bottom: 30, left: 30},
+                    width = (screen.width * 0.75) - margin.left - margin.right,
+                    height = 600 - margin.top - margin.bottom;
+                // append the svg object to the body of the page
+                var svg = d3.select(divname)
+                .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .attr("style", "display:block;margin:auto;")
+                .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+                
+                var myColor = d3.scaleOrdinal()
+                    .domain(groups)
+                    .range(d3.schemeSet2);
+                
+                var x = d3.scaleLinear()
+                    .domain([Math.log2(Math.pow(2,10)/ Math.pow(2,10)),Math.log2(Math.pow(2,21) / Math.pow(2,10))])
+                    .range([ 0, width ]);
+                svg.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
+                var y = d3.scaleLinear()
+                    .domain( [0,maxy])
+                    .range([ height, 0 ]);
+                svg.append("g")
+                    .call(d3.axisLeft(y));
+
+                var line = d3.line()
+                    .x(function(d) { return x(d.x) })
+                    .y(function(d) { return y(d.y) })
+                svg.selectAll("myLines")
+                    .data(dataReady)
+                    .enter()
+                    .append("path")
+                        .attr("class", function(d){ return d.id })
+                        .attr("d", function(d){ return line(d.values) } )
+                        .attr("stroke", function(d){ return myColor(d.name) })
+                        .style("stroke-width", 2)
+                        .style("fill", "none")
+
+                svg
+                    .selectAll("myDots")
+                    .data(dataReady)
+                    .enter()
+                        .append('g')
+                        .style("fill", function(d){ return myColor(d.name) })
+                        .attr("class", function(d){ return d.id })
+                    .selectAll("myPoints")
+                    .data(function(d){ return d.values })
+                    .enter()
+                    .append("circle")
+                        .attr("cx", function(d) { return x(d.x) } )
+                        .attr("cy", function(d) { return y(d.y) } )
+                        .attr("r", 5)
+                        .attr("stroke", "white")
+
+                    // Add a legend at the end of each line
+                svg
+                    .selectAll("myLabels")
+                    .data(dataReady)
+                    .enter()
+                        .append('g')
+                        .append("text")
+                            .attr("class", function(d){ return d.id })
+                            .datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; }) // keep only the last value of each time series
+                            .attr("transform", function(d) { return "translate(" + x(d.value.x) + "," + y(d.value.y) + ")"; }) // Put the text at the position of the last point
+                            .attr("x", 12) // shift the text a bit more right
+                            .text(function(d) { return d.name; })
+                            .style("fill", function(d){ return myColor(d.name) })
+                            .style("font-size", 15)
+                
+                    // Add a legend (interactive)
+                svg
+                    .selectAll("myLegend")
+                    .data(dataReady)
+                    .enter()
+                        .append('g')
+                        .append("text")
+                            .attr('x', function(d,i){ return 30 + i*60})
+                            .attr('y', 30)
+                            .text(function(d) { return d.name; })
+                            .attr('id',function(d) { return d.id;})
+                            .style("fill", function(d){ return myColor(d.name) })
+                            .style("font-size", 15)
+                        .on("click", function(d){
+                            // is the element currently visible ?
+                            currentOpacity = d3.selectAll("." + d.id).style("opacity")
+                            // Change the opacity: from 0 to 1 or from 1 to 0
+                            d3.selectAll("." + d.id).transition().style("opacity", currentOpacity == 1 ? 0:1)
+
+                        })
+            }
+
+            function createBarChart(data, divname, isEncryption, hasMP) {
+
+                var chart = new CanvasJS.Chart(divname, {
+                    animationEnabled: true,
+                    title:{
+                        text: "Throughput (" + (isEncryption ? "Encryption" : "Decryption") + ")"
+                    },	
+                    axisY: {
+                        title: "Throughput (Bytes/s)",
+                        titleFontColor: "#4F81BC",
+                        lineColor: "#4F81BC",
+                        labelFontColor: "#4F81BC",
+                        tickColor: "#4F81BC"
+                    },
+                    toolTip: {
+                        shared: true
+                    },
+                    legend: {
+                        cursor:"pointer",
+                        itemclick: toggleDataSeries
+                    },
+                    data: [{
+                        type: "column",
+                        name: "Minimum Throughput (Bytes/s)",
+                        legendText: "Minimum Throughput",
+                        showInLegend: true, 
+                        dataPoints: hasMP ? [
+                            { label: "Non", y: data["small_O0"]["min_throughput_" + (isEncryption ? "encrypting" : "decrypting")] },
+                            { label: "SIMD", y: data["small_O2"]["min_throughput_" + (isEncryption ? "encrypting" : "decrypting")]},
+                            { label: "MIMD", y: data["small_MP"]["min_throughput_" + (isEncryption ? "encrypting" : "decrypting")] }
+                        ] : [
+                            { label: "Non", y: data["small_O0"]["min_throughput_" + (isEncryption ? "encrypting" : "decrypting")] },
+                            { label: "SIMD", y: data["small_O2"]["min_throughput_" + (isEncryption ? "encrypting" : "decrypting")]}
+                        ]
+                    },
+                    {
+                        type: "column",	
+                        name: "Average Throughput (Bytes/s)",
+                        legendText: "Average Throughput",
+                        showInLegend: true,
+                        dataPoints: hasMP ? [
+                            { label: "Non", y: data["small_O0"]["average_throughput_" + (isEncryption ? "encrypting" : "decrypting")] },
+                            { label: "SIMD", y: data["small_O2"]["average_throughput_" + (isEncryption ? "encrypting" : "decrypting")] },
+                            { label: "MIMD", y: data["small_MP"]["average_throughput_" + (isEncryption ? "encrypting" : "decrypting")] }
+                        ] : [
+                            { label: "Non", y: data["small_O0"]["average_throughput_" + (isEncryption ? "encrypting" : "decrypting")] },
+                            { label: "SIMD", y: data["small_O2"]["average_throughput_" + (isEncryption ? "encrypting" : "decrypting")] }
+                        ]
+                    },
+                    {
+                        type: "column",	
+                        name: "Maximum Throughput (Bytes/s)",
+                        legendText: "Maximum Throughput",
+                        showInLegend: true,
+                        dataPoints: hasMP ? [
+                            { label: "Non", y: data["small_O0"]["max_throughput_" + (isEncryption ? "encrypting" : "decrypting")] },
+                            { label: "SIMD", y: data["small_O2"]["max_throughput_" + (isEncryption ? "encrypting" : "decrypting")] },
+                            { label: "MIMD", y: data["small_MP"]["max_throughput_" + (isEncryption ? "encrypting" : "decrypting")] }
+                        ] : [
+                            { label: "Non", y: data["small_O0"]["max_throughput_" + (isEncryption ? "encrypting" : "decrypting")] },
+                            { label: "SIMD", y: data["small_O2"]["max_throughput_" + (isEncryption ? "encrypting" : "decrypting")] }
+                        ]
+                    }
+                    ]
+                });
+                chart.render();
+            }
+            
+            function createLatencyBarChart(data, divname, isEncryption, hasMP) {
+                var chart = new CanvasJS.Chart(divname, {
+                    animationEnabled: true,
+                    title:{
+                        text: "Latency (" + (isEncryption ? "Encryption" : "Decryption") + ")"
+                    },	
+                    axisY: {
+                        title: "Latency (ms)",
+                        titleFontColor: "#4F81BC",
+                        lineColor: "#4F81BC",
+                        labelFontColor: "#4F81BC",
+                        tickColor: "#4F81BC"
+                    },
+                    toolTip: {
+                        shared: true
+                    },
+                    legend: {
+                        cursor:"pointer",
+                        itemclick: toggleDataSeries
+                    },
+                    data: [{
+                        type: "column",
+                        name: "Latency (ms)",
+                        legendText: "Latency",
+                        showInLegend: true, 
+                        dataPoints: hasMP ? [
+                            { label: "Non", y: 1000*data["latency_O0"]["latency_" + (isEncryption ? "encryption" : "decryption")] },
+                            { label: "SIMD", y: 1000*data["latency_O2"]["latency_" + (isEncryption ? "encryption" : "decryption")]},
+                            { label: "MIMD", y: 1000*data["latency_MP"]["latency_" + (isEncryption ? "encryption" : "decryption")] }
+                        ] : [
+                            { label: "Non", y: 1000*data["latency_O0"]["latency_" + (isEncryption ? "encryption" : "decryption")] },
+                            { label: "SIMD", y: 1000*data["latency_O2"]["latency_" + (isEncryption ? "encryption" : "decryption")]}
+                        ]
+                    }
+                    ]
+                });
+                chart.render();
+            }
+            
+            function returnTable() {
+                var moreInfo = document.getElementById("moreInfo");
+                moreInfo.style = "display:none";
+                var table = document.getElementById("resultsTable");
+                table.style = "display:block";
+                var graph = document.getElementById("my_dataviz1");
+                graph.innerHTML = "";
+                var graph = document.getElementById("my_dataviz2");
+                graph.innerHTML = "";
+                var graph = document.getElementById("my_dataviz3");
+                graph.innerHTML = "";
+                var graph = document.getElementById("my_dataviz4");
+                graph.innerHTML = "";
+                var graph = document.getElementById("my_dataviz5");
+                graph.innerHTML = "";
+                var graph = document.getElementById("my_dataviz6");
+                graph.innerHTML = "";
+                var graph = document.getElementById("my_dataviz7");
+                graph.innerHTML = "";
+            }
+            
+            generateTable();
+        </script>
+
+    </body>
+</html>

@@ -1,0 +1,114 @@
+# NOTE: update this with your service name
+service: benchmarking-app
+
+custom:
+  tableName: evaluation-benchmarks
+  bucketName: evaluation-algorithms
+# Create an optimized package for our functions
+package:
+  individually: true
+
+plugins:
+  - serverless-bundle # Package our functions with Webpack
+  - serverless-offline
+  - serverless-dotenv-plugin # Load .env as environment variables
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: prod
+  region: eu-west-1
+  environment:
+    tableName: ${self:custom.tableName}
+    bucketName: ${self:custom.bucketName}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - s3:GetObject
+        - s3:ListBucket
+      Resource:
+        - "Fn::GetAtt": [ BenchmarksTable, Arn ]
+        - arn:aws:s3:::evaluation-algorithms
+        - arn:aws:s3:::evaluation-algorithms/*
+
+functions:
+  # Defines an HTTP API endpoint that calls the main function in create.js
+  # - path: url path is /add
+  # - method: POST request
+  # - cors: enabled CORS (Cross-Origin Resource Sharing) for browser cross
+  #     domain api call
+  # - authorizer: authenticate using the AWS IAM rolec
+  add:
+    handler: functions/add.main
+    events:
+      - http:
+          path: add
+          method: post
+          cors: true
+#          authorizer: aws_iam
+  get:
+    handler: functions/get.main
+    events:
+      - http:
+          path: benchmarks/{id}
+          method: get
+          cors: true
+#          authorizer: aws_iam
+  getAll:
+    handler: functions/getAll.main
+    events:
+      - http:
+          path: benchmarks
+          method: get
+          cors: true
+#          authorizer: aws_iam
+  hash:
+    handler: functions/hash.main
+    events:
+      - http:
+          path: hash
+          method: post
+          cors: true
+#          authorizer: aws_iam
+
+resources:
+  Resources:
+    BenchmarksTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableName}
+        AttributeDefinitions:
+          - AttributeName: benchmarkId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: benchmarkId
+            KeyType: HASH
+        # Set the capacity to auto-scale
+        BillingMode: PAY_PER_REQUEST
+
+    ExecutablesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucketName}
+        # Set the CORS policy
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000

@@ -1,0 +1,12 @@
+{
+    "body": {
+        "resultHash": "4222cefee671c6b24ac53bcf6bd94fd04b7e2db022d8b12da3df9344b01ad123",
+        "result": {
+            "system": "Darwin",
+            "machine": "x86_64",
+            "nist_test_vectors_runtime_optmised": "1.9273526668548584",
+            "additional_information": "",
+            "algorithm_name": "elephant"
+        }
+    }
+}
